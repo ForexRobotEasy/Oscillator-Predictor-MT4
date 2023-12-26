@@ -1,0 +1,66 @@
+
+//+------------------------------------------------------------------+
+//|                                            Oscillator Predictor MT4|
+//|                                                 forexroboteasy.com|
+//|                                 Developed by Forex Robot Easy Team|
+//+------------------------------------------------------------------+
+
+//--- Indicator Parameters
+input int BandsPeriod = 20; // Period for calculating Predictor bands
+input int Threshold = 70; // Threshold for identifying overbought and oversold conditions
+
+//--- Indicator Buffers
+double PredictorUpper[];
+double PredictorLower[];
+double PredictorSignal[];
+
+//--- Indicator Initialization
+int OnInit()
+{
+   //--- Indicator buffers mapping
+   SetIndexBuffer(0, PredictorUpper);
+   SetIndexBuffer(1, PredictorLower);
+   SetIndexBuffer(2, PredictorSignal);
+
+   //--- Indicator labels
+   SetIndexLabel(0, 'Predictor Upper');
+   SetIndexLabel(1, 'Predictor Lower');
+   SetIndexLabel(2, 'Predictor Signal');
+
+   return(INIT_SUCCEEDED);
+}
+
+//--- Indicator Calculation
+int OnCalculate(const int rates_total,
+               const int prev_calculated,
+               const datetime &time[],
+               const double &open[],
+               const double &high[],
+               const double &low[],
+               const double &close[],
+               const long &tick_volume[],
+               const long &volume[],
+               const int &spread[])
+{
+   //--- Calculate Predictor bands
+   for(int i = prev_calculated; i < rates_total; i++)
+   {
+      PredictorUpper[i] = iMA(NULL, 0, BandsPeriod, 0, MODE_UPPER, PRICE_CLOSE, i);
+      PredictorLower[i] = iMA(NULL, 0, BandsPeriod, 0, MODE_LOWER, PRICE_CLOSE, i);
+   }
+
+   //--- Calculate overbought and oversold conditions
+   for(int i = prev_calculated; i < rates_total; i++)
+   {
+      double currentClose = close[i];
+
+      if(currentClose > PredictorUpper[i] && currentClose > Threshold)
+         PredictorSignal[i] = -1; // Market is overbought
+      else if(currentClose < PredictorLower[i] && currentClose < (100 - Threshold))
+         PredictorSignal[i] = 1; // Market is oversold
+      else
+         PredictorSignal[i] = 0; // No signal
+   }
+
+   return(rates_total);
+}
